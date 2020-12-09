@@ -2,10 +2,11 @@ package wallpaperchanger
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"net/url"
 
-	"github.com/levigross/grequests"
 	"github.com/urfave/cli/v2"
 )
 
@@ -23,13 +24,18 @@ type wallhavenResponse struct {
 // FetchMetadata makes request with passed parameters to wallhaven.cc api and returns response as json
 func FetchMetadata(args *cli.Context) *[]WallpaperMetadata {
 	url := applyParameters(args)
-	resp, err := grequests.Get(url, nil)
+	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatalln("Failed to make request: ", err)
 	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil
+	}
 
 	var metadata wallhavenResponse
-	json.Unmarshal(resp.Bytes(), &metadata)
+	json.Unmarshal(body, &metadata)
 
 	return &metadata.Data
 }
