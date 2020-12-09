@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
+	"time"
 
 	wp "github.com/Quik95/wallpaper-changer"
 	"github.com/urfave/cli/v2"
@@ -92,7 +94,11 @@ func main() {
 				return err
 			}
 			metadata := wp.FetchMetadata(c)
-			fmt.Printf("%#v", metadata)
+
+			// choose random wallpaper
+			rand.Seed(time.Now().UnixNano()) // seed generator
+			randomWallpaper := (*metadata)[rand.Intn(len(*metadata))]
+			fmt.Printf("%#v", randomWallpaper)
 
 			return nil
 		},
