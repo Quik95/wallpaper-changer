@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -9,20 +10,6 @@ import (
 )
 
 func main() {
-	type Options struct {
-		Categories string
-		Purity     string
-		Sortign    string
-		Order      string
-		TopRange   string
-		Atleast    string
-		Resolution string
-		Ratios     string
-		Page       uint32
-		Seed       string
-		Query      string
-	}
-
 	app := &cli.App{
 		Name:  "Wallpaper Changer",
 		Usage: "Set your desktop wallpaper to one of many amazing wallpapers delivered by wallhaven.cc",
@@ -104,6 +91,8 @@ func main() {
 			if err := wp.ValidateArgs(c); err != nil {
 				return err
 			}
+			metadata := wp.FetchMetadata(c)
+			fmt.Printf("%#v", metadata)
 
 			return nil
 		},
