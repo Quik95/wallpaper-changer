@@ -93,7 +93,10 @@ func main() {
 			if err := wp.ValidateArgs(c); err != nil {
 				return err
 			}
-			metadata := wp.FetchMetadata(c)
+			metadata, err := wp.FetchMetadata(c)
+			if err != nil {
+				return err
+			}
 
 			// choose random wallpaper
 			rand.Seed(time.Now().UnixNano()) // seed generator

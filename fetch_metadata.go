@@ -2,8 +2,8 @@ package wallpaperchanger
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -22,22 +22,22 @@ type wallhavenResponse struct {
 }
 
 // FetchMetadata makes request with passed parameters to wallhaven.cc api and returns response as json
-func FetchMetadata(args *cli.Context) *[]WallpaperMetadata {
+func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	url := applyParameters(args)
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatalln("Failed to make request: ", err)
+		return nil, fmt.Errorf("Failed to download metadata: %v", err)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	var metadata wallhavenResponse
 	json.Unmarshal(body, &metadata)
 
-	return &metadata.Data
+	return &metadata.Data, nil
 }
 
 func applyParameters(args *cli.Context) string {
