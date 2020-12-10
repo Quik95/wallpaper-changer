@@ -97,11 +97,19 @@ func main() {
 			if err != nil {
 				return err
 			}
+			if len(*metadata) == 0 {
+				return fmt.Errorf("Wallhaven did not return any wallpaper")
+			}
 
 			// choose random wallpaper
 			rand.Seed(time.Now().UnixNano()) // seed generator
 			randomWallpaper := (*metadata)[rand.Intn(len(*metadata))]
-			fmt.Printf("%#v", randomWallpaper)
+
+			savePath, err := wp.DownloadWallpaper(&randomWallpaper, c.String("output"))
+			if err != nil {
+				return err
+			}
+			fmt.Printf("%s", savePath)
 
 			return nil
 		},
