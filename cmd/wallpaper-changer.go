@@ -8,6 +8,7 @@ import (
 	"time"
 
 	wp "github.com/Quik95/wallpaper-changer"
+	"github.com/reujab/wallpaper"
 	"github.com/urfave/cli/v2"
 )
 
@@ -109,7 +110,10 @@ func main() {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("%s", savePath)
+
+			if err := wallpaper.SetFromFile(savePath); err != nil {
+				return err
+			}
 
 			return nil
 		},
