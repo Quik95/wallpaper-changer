@@ -19,6 +19,11 @@ func DownloadWallpaper(wlp *WallpaperMetadata, basePath string) (string, error) 
 		return "", err
 	}
 
+	//skip download if file already exists
+	if _, err := os.Stat(savePath); err == nil {
+		return savePath, nil
+	}
+
 	resp, err := http.Get(wlp.Path)
 	if err != nil {
 		return "", err
