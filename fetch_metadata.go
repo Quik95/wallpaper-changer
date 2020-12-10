@@ -50,6 +50,7 @@ func applyParameters(args *cli.Context) string {
 	v.Set("atleast", args.String("atleast"))
 	v.Set("resolutions", args.String("resolutions"))
 	v.Set("ratios", args.String("ratios"))
+	v.Set("apikey", args.String("api-key"))
 	query := v.Encode()
 
 	url := url.URL{
