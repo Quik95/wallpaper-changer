@@ -23,24 +23,31 @@ type wallhavenResponse struct {
 
 // FetchMetadata makes request with passed parameters to wallhaven.cc api and returns response as json
 func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
-	url := applyParameters(args)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to download metadata: %v", err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+	pages := args.Int("pages")
+
+	var metadata []WallpaperMetadata
+
+	for i := 1; i <= pages; i++ {
+		url := applyParameters(args, i)
+		resp, err := http.Get(url)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to download metadata: %v", err)
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		var results wallhavenResponse
+		json.Unmarshal(body, &results)
+		metadata = append(metadata, results.Data...)
 	}
 
-	var metadata wallhavenResponse
-	json.Unmarshal(body, &metadata)
-
-	return &metadata.Data, nil
+	return &metadata, nil
 }
 
-func applyParameters(args *cli.Context) string {
+func applyParameters(args *cli.Context, pageNumber int) string {
 	v := url.Values{}
 	v.Set("categories", args.String("categories"))
 	v.Set("purity", args.String("purity"))
@@ -51,6 +58,7 @@ func applyParameters(args *cli.Context) string {
 	v.Set("resolutions", args.String("resolutions"))
 	v.Set("ratios", args.String("ratios"))
 	v.Set("apikey", args.String("api-key"))
+	v.Set("page", fmt.Sprint(pageNumber))
 	query := v.Encode()
 
 	url := url.URL{
