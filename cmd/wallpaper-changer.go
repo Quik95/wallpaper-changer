@@ -42,7 +42,6 @@ func main() {
 			},
 			&cli.StringFlag{
 				Name:    "top-range",
-				Value:   "1M",
 				Usage:   "Select time range for toplist sorting",
 				Aliases: []string{"r"},
 			},

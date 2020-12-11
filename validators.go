@@ -38,6 +38,28 @@ func ValidateArgs(c *cli.Context) error {
 		return err
 	}
 
+	if err := validatePairedOptions(c); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func validatePairedOptions(c *cli.Context) error {
+	purity := c.String("purity")
+	key := c.String("api-key")
+
+	if purity[2] == '1' && len(key) == 0 {
+		return fmt.Errorf("When using purity setting NSFW providing api key is required")
+	}
+
+	sorting := c.String("sorting")
+	topRange := c.String("top-range")
+
+	if len(topRange) != 0 && sorting != "toplist" {
+		return fmt.Errorf("When using top-range option sorting must be set to toplist")
+	}
+
 	return nil
 }
 
