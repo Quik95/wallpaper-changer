@@ -118,6 +118,7 @@ func validateTimeRange(r string) error {
 		"3M": true,
 		"6M": true,
 		"1y": true,
+		"":   true,
 	}
 
 	return validateMap(&valid, r, fmt.Sprintf("%s is not a valid time range", r))
