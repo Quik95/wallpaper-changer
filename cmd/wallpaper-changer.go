@@ -111,8 +111,10 @@ func main() {
 				return err
 			}
 
-			if err := wallpaper.SetFromFile(savePath); err != nil {
-				return err
+			if !c.Bool("dry-run") {
+				if err := wallpaper.SetFromFile(savePath); err != nil {
+					return err
+				}
 			}
 
 			return nil
