@@ -97,12 +97,14 @@ func main() {
 			if err != nil {
 				return err
 			}
-			if len(*metadata) == 0 {
+			numberOfItems := len(*metadata)
+			if numberOfItems == 0 {
 				return fmt.Errorf("Wallhaven did not return any wallpaper")
 			}
 
 			// choose random wallpaper
 			rand.Seed(time.Now().UnixNano()) // seed generator
+			randomWallpaper := (*metadata)[rand.Intn(numberOfItems)]
 			randomWallpaper := (*metadata)[rand.Intn(len(*metadata))]
 
 			savePath, err := wp.DownloadWallpaper(&randomWallpaper, c.String("output"))
