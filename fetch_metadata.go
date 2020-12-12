@@ -19,6 +19,7 @@ type WallpaperMetadata struct {
 
 type wallhavenResponse struct {
 	Data []WallpaperMetadata
+	Meta struct{ Seed string }
 }
 
 // FetchMetadata makes request with passed parameters to wallhaven.cc api and returns response as json
@@ -26,28 +27,49 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	pages := args.Int("pages")
 
 	var metadata []WallpaperMetadata
+	var seed string
 
-	for i := 1; i <= pages; i++ {
-		url := applyParameters(args, i)
-		resp, err := http.Get(url)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to download metadata: %v", err)
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
+	url := applyParameters(args, 1, "")
+	resp, err := fetch(url)
+	if err != nil {
+		return nil, err
+	}
+	parseJSON(resp, &metadata, &seed)
+
+	for i := 2; i <= pages; i++ {
+		url := applyParameters(args, i, seed)
+		resp, err := fetch(url)
 		if err != nil {
 			return nil, err
 		}
 
-		var results wallhavenResponse
-		json.Unmarshal(body, &results)
-		metadata = append(metadata, results.Data...)
+		parseJSON(resp, &metadata, &seed)
 	}
 
 	return &metadata, nil
 }
 
-func applyParameters(args *cli.Context, pageNumber int) string {
+func parseJSON(in []byte, out *([]WallpaperMetadata), seed *string) {
+	var results wallhavenResponse
+	json.Unmarshal(in, &results)
+	*seed = results.Meta.Seed
+	*out = append(*out, results.Data...)
+}
+
+func fetch(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to download metadata: %v", err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
+}
+
+func applyParameters(args *cli.Context, pageNumber int, seed string) string {
 	v := url.Values{}
 	v.Set("categories", args.String("categories"))
 	v.Set("purity", args.String("purity"))
@@ -59,6 +81,11 @@ func applyParameters(args *cli.Context, pageNumber int) string {
 	v.Set("ratios", args.String("ratios"))
 	v.Set("apikey", args.String("api-key"))
 	v.Set("page", fmt.Sprint(pageNumber))
+
+	if seed != "" {
+		v.Set("seed", seed)
+	}
+
 	query := v.Encode()
 
 	url := url.URL{
