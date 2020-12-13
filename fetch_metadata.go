@@ -30,6 +30,7 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	failures := make(chan error, 0)
 	var seed string
 
+	// Fetch first page of results manually to get a seed
 	url := applyParameters(args, 1, "")
 	resp, err := fetch(url)
 	if err != nil {
@@ -39,6 +40,7 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	parseJSON(resp, &met, &seed)
 	metadata <- met
 
+	// Fetch rest of pages using previously fetched seed
 	for i := 2; i <= pages; i++ {
 		go func(i int, seed string) {
 			url := applyParameters(args, i, seed)
