@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"sync"
 
 	"github.com/urfave/cli/v2"
 )
@@ -30,8 +29,6 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	metadata := make(chan []WallpaperMetadata, pages)
 	failures := make(chan error, 0)
 	var seed string
-	var wg sync.WaitGroup
-	wg.Add(pages)
 
 	url := applyParameters(args, 1, "")
 	resp, err := fetch(url)
@@ -41,11 +38,9 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	var met []WallpaperMetadata
 	parseJSON(resp, &met, &seed)
 	metadata <- met
-	wg.Done()
 
 	for i := 2; i <= pages; i++ {
-		go func(i int, seed string, wg *sync.WaitGroup) {
-			defer wg.Done()
+		go func(i int, seed string) {
 			url := applyParameters(args, i, seed)
 			resp, err := fetch(url)
 			if err != nil {
@@ -56,10 +51,8 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 			var met []WallpaperMetadata
 			parseJSON(resp, &met, &seed)
 			metadata <- met
-		}(i, seed, &wg)
+		}(i, seed)
 	}
-	wg.Wait()
-	close(metadata)
 
 	select {
 	case err := <-failures:
@@ -67,9 +60,10 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	default:
 		{
 			var wallpapers []WallpaperMetadata
-			for part := range metadata {
-				wallpapers = append(wallpapers, part...)
+			for i := 0; i < pages; i++ {
+				wallpapers = append(wallpapers, <-metadata...)
 			}
+			close(metadata)
 			return &wallpapers, nil
 		}
 	}
