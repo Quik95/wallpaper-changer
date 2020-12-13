@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sync"
 
 	"github.com/urfave/cli/v2"
 )
@@ -26,27 +27,41 @@ type wallhavenResponse struct {
 func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	pages := args.Int("pages")
 
-	var metadata []WallpaperMetadata
+	metadata := make(chan []WallpaperMetadata, pages)
 	var seed string
+	var wg sync.WaitGroup
+	wg.Add(pages)
 
 	url := applyParameters(args, 1, "")
 	resp, err := fetch(url)
 	if err != nil {
 		return nil, err
 	}
-	parseJSON(resp, &metadata, &seed)
+	var met []WallpaperMetadata
+	parseJSON(resp, &met, &seed)
+	metadata <- met
+	wg.Done()
 
 	for i := 2; i <= pages; i++ {
-		url := applyParameters(args, i, seed)
-		resp, err := fetch(url)
-		if err != nil {
-			return nil, err
-		}
+		go func(i int, seed string, wg *sync.WaitGroup) {
+			defer wg.Done()
+			url := applyParameters(args, i, seed)
+			resp, _ := fetch(url)
 
-		parseJSON(resp, &metadata, &seed)
+			var met []WallpaperMetadata
+			parseJSON(resp, &met, &seed)
+			metadata <- met
+		}(i, seed, &wg)
+	}
+	wg.Wait()
+	close(metadata)
+
+	var wallpapers []WallpaperMetadata
+	for part := range metadata {
+		wallpapers = append(wallpapers, part...)
 	}
 
-	return &metadata, nil
+	return &wallpapers, nil
 }
 
 func parseJSON(in []byte, out *([]WallpaperMetadata), seed *string) {
