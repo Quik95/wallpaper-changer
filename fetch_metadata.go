@@ -28,6 +28,7 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	pages := args.Int("pages")
 
 	metadata := make(chan []WallpaperMetadata, pages)
+	failures := make(chan error, 0)
 	var seed string
 	var wg sync.WaitGroup
 	wg.Add(pages)
@@ -46,7 +47,11 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 		go func(i int, seed string, wg *sync.WaitGroup) {
 			defer wg.Done()
 			url := applyParameters(args, i, seed)
-			resp, _ := fetch(url)
+			resp, err := fetch(url)
+			if err != nil {
+				failures <- err
+				return
+			}
 
 			var met []WallpaperMetadata
 			parseJSON(resp, &met, &seed)
@@ -56,12 +61,18 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	wg.Wait()
 	close(metadata)
 
-	var wallpapers []WallpaperMetadata
-	for part := range metadata {
-		wallpapers = append(wallpapers, part...)
+	select {
+	case err := <-failures:
+		return nil, err
+	default:
+		{
+			var wallpapers []WallpaperMetadata
+			for part := range metadata {
+				wallpapers = append(wallpapers, part...)
+			}
+			return &wallpapers, nil
+		}
 	}
-
-	return &wallpapers, nil
 }
 
 func parseJSON(in []byte, out *([]WallpaperMetadata), seed *string) {
