@@ -105,7 +105,6 @@ func main() {
 			// choose random wallpaper
 			rand.Seed(time.Now().UnixNano()) // seed generator
 			randomWallpaper := (*metadata)[rand.Intn(numberOfItems)]
-			randomWallpaper := (*metadata)[rand.Intn(len(*metadata))]
 
 			savePath, err := wp.DownloadWallpaper(&randomWallpaper, c.String("output"))
 			if err != nil {
