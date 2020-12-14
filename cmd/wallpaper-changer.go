@@ -88,6 +88,11 @@ func main() {
 				Usage:   "Wallhaven api key",
 				Aliases: []string{"k"},
 			},
+			&cli.StringFlag{
+				Name:    "query",
+				Usage:   "Specify query to use for searching wallhaven.cc",
+				Aliases: []string{"q"},
+			},
 		},
 		Action: func(c *cli.Context) error {
 			if err := wp.ValidateArgs(c); err != nil {
