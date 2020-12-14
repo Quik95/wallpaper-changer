@@ -37,6 +37,9 @@ func ValidateArgs(c *cli.Context) error {
 	if err := validatePages(c.Int("pages")); err != nil {
 		return err
 	}
+	if err := validateQuery(c.String("query")); err != nil {
+		return err
+	}
 
 	if err := validatePairedOptions(c); err != nil {
 		return err
@@ -149,6 +152,29 @@ func validateTimeRange(r string) error {
 func validatePages(p int) error {
 	if p <= 0 {
 		return fmt.Errorf("Page number cannot be negative or zero")
+	}
+
+	return nil
+}
+
+func validateQuery(q string) error {
+	parts := strings.Split(q, ",")
+
+	for _, part := range parts {
+		//check validity of an ID
+		if strings.HasPrefix(part, "id:") {
+			if _, err := strconv.Atoi(part[3:]); err != nil {
+				return fmt.Errorf("%s is not a valid wallpaper ID", part[3:])
+			}
+		}
+
+		// check filetype validity
+		if strings.HasPrefix(part, "type:") {
+			rest := part[5:]
+			if rest != "png" && rest != "jpg" {
+				return fmt.Errorf("%s is not a valid wallpaper extension. Use png or jpg", rest)
+			}
+		}
 	}
 
 	return nil
