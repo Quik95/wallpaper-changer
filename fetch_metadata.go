@@ -103,6 +103,7 @@ func applyParameters(args *cli.Context, pageNumber int, seed string) string {
 	v.Set("ratios", args.String("ratios"))
 	v.Set("apikey", args.String("api-key"))
 	v.Set("page", fmt.Sprint(pageNumber))
+	v.Set("q", args.String("query"))
 
 	if seed != "" {
 		v.Set("seed", seed)
