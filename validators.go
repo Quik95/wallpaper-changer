@@ -52,7 +52,7 @@ func validatePairedOptions(c *cli.Context) error {
 	purity := c.String("purity")
 	key := c.String("api-key")
 
-	if purity[2] == '1' && len(key) == 0 {
+	if len(purity) == 3 && purity[2] == '1' && len(key) == 0 {
 		return fmt.Errorf("When using purity setting NSFW providing api key is required")
 	}
 
@@ -67,6 +67,10 @@ func validatePairedOptions(c *cli.Context) error {
 }
 
 func validateCategory(c string) error {
+	if len(c) == 0 {
+		return nil
+	}
+
 	if len(c) != 3 {
 		return fmt.Errorf("%s is not a valid category", c)
 	}
@@ -86,7 +90,7 @@ func validateCategory(c string) error {
 }
 
 func validateResolution(r string) error {
-	if r == "" {
+	if len(r) == 0 {
 		return nil
 	}
 
@@ -113,6 +117,10 @@ func validateMap(m *map[string]bool, v string, message string) error {
 }
 
 func validateSorting(s string) error {
+	if len(s) == 0 {
+		return nil
+	}
+
 	valid := map[string]bool{
 		"date_added": true,
 		"relevance":  true,
@@ -126,6 +134,10 @@ func validateSorting(s string) error {
 }
 
 func validateOrder(o string) error {
+	if len(o) == 0 {
+		return nil
+	}
+
 	valid := map[string]bool{
 		"desc": true,
 		"asc":  true,
@@ -135,6 +147,10 @@ func validateOrder(o string) error {
 }
 
 func validateTimeRange(r string) error {
+	if len(r) == 0 {
+		return nil
+	}
+
 	valid := map[string]bool{
 		"1d": true,
 		"3d": true,
