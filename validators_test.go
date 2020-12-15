@@ -1,94 +1,154 @@
 package wallpaperchanger
 
 import (
+	"flag"
 	"fmt"
 	"testing"
+
+	"github.com/urfave/cli/v2"
 )
 
-func TestValidateCategory(t *testing.T) {
-	var tests = []struct {
-		data string
-		//is error
-		wantsError bool
+func getEmptyConfig() (*cli.Context, *flag.FlagSet) {
+	set := flag.NewFlagSet("test", 0)
+	ctx := cli.NewContext(nil, set, nil)
+	command := cli.Command{Name: "mycommand"}
+	ctx.Command = &command
+
+	return ctx, set
+}
+
+// returns true when ans doesn't match wantsError
+func checkResult(ans error, wantsError bool) bool {
+	isError := false
+	if ans != nil {
+		isError = true
+	}
+	if isError != wantsError {
+		return true
+	}
+
+	return false
+}
+
+func TestValidateArgs(t *testing.T) {
+	tests := []struct {
+		category, value string
+		wantsError      bool
 	}{
-		{"110", false},
-		{"001", false},
-		{"elo", true},
-		{"1000", true},
-		{"0", true},
-		{"090", true},
+		// categories and purity settings
+		{"categories", "111-", true},
+		{"categories", "", false},
+		{"categories", "000", true},
+		{"categories", "010", false},
+		{"categories", "101", false},
+
+		// don't test with NSFW setting 1 to avoid checking api key for now
+		{"purity", "111-", true},
+		{"purity", "", false},
+		{"purity", "000", true},
+		{"purity", "010", false},
+		{"purity", "100", false},
+
+		//resolutions and ratios
+		{"resolutions", "", false},
+		{"resolutions", "1920x1080", false},
+		{"resolutions", "1920x1080,1280x720", false},
+		{"resolutions", "19201080", true},
+		{"resolutions", "1920x1080,", true},
+		{"resolutions", "1920xx1080,", true},
+		{"resolutions", "xx1080,", true},
+
+		{"ratios", "", false},
+		{"ratios", "16x9", false},
+		{"ratios", "16x9,16x10", false},
+		{"ratios", "169", true},
+		{"ratios", "16x9,", true},
+		{"ratios", "16xx9", true},
+		{"ratios", "xx9", true},
+
+		// sorting types
+		{"sorting", "", false},
+		{"sorting", "date_added", false},
+		{"sorting", "relevance", false},
+		{"sorting", "random", false},
+		{"sorting", "views", false},
+		{"sorting", "favorites", false},
+		{"sorting", "toplist", false},
+		{"sorting", "aaa", true},
+		{"sorting", "AAAAAA", true},
+		{"sorting", "top-list", true},
+		{"sorting", "favourites", true},
+
+		//order types
+		{"order", "", false},
+		{"order", "asc", false},
+		{"order", "desc", false},
+		{"order", "ascending", true},
+		{"order", "descending", true},
+
+		//query
+		{"query", "", false},
+		{"query", "cyberpunk", false},
+		{"query", "-cyberpunk", false},
+		{"query", "+cyberpunk", false},
+		{"query", "-cyberpunk +starwars", false},
+		{"query", "@Quik95", false},
+		{"query", "id:4445", false},
+		{"query", "id:1", false},
+		{"query", "id:a", true},
+		{"query", "type:png", false},
+		{"query", "type:jpg", false},
+		{"query", "type:jpeg", true},
+		{"query", "like:slfk24", false},
 	}
 
 	for _, tt := range tests {
-		testname := tt.data
+		testname := fmt.Sprintf("Category: %s, Value: %s", tt.category, tt.value)
+
+		ctx, set := getEmptyConfig()
+		set.String(tt.category, tt.value, "")
+
+		//workaround for empty pages test
+		set.Int("pages", 1, "")
+
 		t.Run(testname, func(t *testing.T) {
-			ans := validateCategory(tt.data)
-			if ans == nil && tt.wantsError == true {
-				t.Errorf("Got <nil>, expected error")
-			}
-			if ans != nil && tt.wantsError == false {
-				t.Errorf("Got `%v`, expected <nil>", ans)
+			ans := ValidateArgs(ctx)
+			if checkResult(ans, tt.wantsError) {
+				t.Errorf("got: %v, want error: %t", ans, tt.wantsError)
 			}
 		})
 	}
 }
 
-func TestValidateResolution(t *testing.T) {
-	var tests = []struct {
-		data string
-		//is error
-		wantsError bool
+func TestValidatePairedOptions(t *testing.T) {
+	tests := []struct {
+		keys, values []string
+		wantsError   bool
 	}{
-		{"1920x1080", false},
-		{"16x9", false},
-		{"1920x1080,1276x726", false},
-		{"4x3", false},
-		{"4", true},
-		{"x", true},
-		{",", true},
+		// apikey and purity
+		{[]string{"purity", "api-key"}, []string{"111", "asdasda"}, false},
+		{[]string{"purity", "api-key"}, []string{"110", "asdasda"}, false},
+		{[]string{"purity", "api-key"}, []string{"111", ""}, true},
+
+		//time range and sorting toplist
+		{[]string{"sorting", "top-range"}, []string{"toplist", "1w"}, false},
+		{[]string{"sorting", "top-range"}, []string{"random", "1w"}, true},
+		{[]string{"sorting", "top-range"}, []string{"toplist", ""}, false},
 	}
 
 	for _, tt := range tests {
-		testname := tt.data
-		t.Run(testname, func(t *testing.T) {
-			ans := validateResolution(tt.data)
-			if ans == nil && tt.wantsError == true {
-				t.Errorf("Got <nil>, expected error")
-			}
-			if ans != nil && tt.wantsError == false {
-				t.Errorf("Got `%v`, expected <nil>", ans)
-			}
-		})
-	}
-}
+		testname := fmt.Sprintf("Testing paired options: %#v, with values: %#v", tt.keys, tt.values)
 
-func TestValidateSorting(t *testing.T) {
-	var tests = []struct {
-		data string
-		//is error
-		wantsError bool
-	}{
-		{"date_added", false},
-		{"relevance", false},
-		{"random", false},
-		{"views", false},
-		{"favorites", false},
-		{"toplist", false},
-		{"asasa", true},
-		{"topList", true},
-		{"dateadded", true},
-		{"110", true},
-	}
+		ctx, set := getEmptyConfig()
 
-	for _, tt := range tests {
-		testname := tt.data
+		for i, key := range tt.keys {
+			set.String(key, tt.values[i], "")
+		}
+
 		t.Run(testname, func(t *testing.T) {
-			ans := validateSorting(tt.data)
-			if ans == nil && tt.wantsError == true {
-				t.Errorf("Got <nil>, expected error")
-			}
-			if ans != nil && tt.wantsError == false {
-				t.Errorf("Got `%v`, expected <nil>", ans)
+			ans := validatePairedOptions(ctx)
+			if checkResult(ans, tt.wantsError) {
+				t.Errorf("got: %v, want error: %t", ans, tt.wantsError)
 			}
 		})
 	}
@@ -112,41 +172,11 @@ func TestValidateTimeRange(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		testname := tt.data
+		testname := fmt.Sprintf("Testing timerange: %s", tt.data)
 		t.Run(testname, func(t *testing.T) {
 			ans := validateTimeRange(tt.data)
-			if ans == nil && tt.wantsError == true {
-				t.Errorf("Got <nil>, expected error")
-			}
-			if ans != nil && tt.wantsError == false {
-				t.Errorf("Got `%v`, expected <nil>", ans)
-			}
-		})
-	}
-}
-
-func TestValidateOrder(t *testing.T) {
-	var tests = []struct {
-		data string
-		//is error
-		wantsError bool
-	}{
-		{"desc", false},
-		{"asc", false},
-		{"descending", true},
-		{"ascending", true},
-		{"as", true},
-	}
-
-	for _, tt := range tests {
-		testname := tt.data
-		t.Run(testname, func(t *testing.T) {
-			ans := validateOrder(tt.data)
-			if ans == nil && tt.wantsError == true {
-				t.Errorf("Got <nil>, expected error")
-			}
-			if ans != nil && tt.wantsError == false {
-				t.Errorf("Got `%v`, expected <nil>", ans)
+			if checkResult(ans, tt.wantsError) {
+				t.Fatalf("Got %v, wanted error: %t", ans, tt.wantsError)
 			}
 		})
 	}
@@ -158,21 +188,17 @@ func TestValidatePages(t *testing.T) {
 		//is error
 		wantsError bool
 	}{
-		{1, false},
 		{10, false},
-		{-1, true},
+		{-10, true},
 		{0, true},
 	}
 
 	for _, tt := range tests {
-		testname := fmt.Sprint(tt.data)
+		testname := fmt.Sprintf("Testing page number: %d", tt.data)
 		t.Run(testname, func(t *testing.T) {
 			ans := validatePages(tt.data)
-			if ans == nil && tt.wantsError == true {
-				t.Errorf("Got <nil>, expected error")
-			}
-			if ans != nil && tt.wantsError == false {
-				t.Errorf("Got `%v`, expected <nil>", ans)
+			if checkResult(ans, tt.wantsError) {
+				t.Fatalf("Got %v, wanted error: %t", ans, tt.wantsError)
 			}
 		})
 	}
