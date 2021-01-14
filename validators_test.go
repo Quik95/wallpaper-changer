@@ -74,6 +74,7 @@ func TestValidateArgs(t *testing.T) {
 		{"sorting", "views", false},
 		{"sorting", "favorites", false},
 		{"sorting", "toplist", false},
+		{"sorting", "hot", false},
 		{"sorting", "aaa", true},
 		{"sorting", "AAAAAA", true},
 		{"sorting", "top-list", true},

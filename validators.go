@@ -128,6 +128,7 @@ func validateSorting(s string) error {
 		"views":      true,
 		"favorites":  true,
 		"toplist":    true,
+		"hot":        true,
 	}
 
 	return validateMap(&valid, s, fmt.Sprintf("%s is not a valid sorting type", s))
