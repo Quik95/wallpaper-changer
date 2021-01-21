@@ -39,34 +39,29 @@ type wallhavenResponse struct {
 // FetchMetadata makes request with passed parameters to wallhaven.cc api and returns response as json
 func FetchMetadata(wallpaperConf SearchConfig) (*[]WallpaperMetadata, error) {
 	pages := wallpaperConf.Pages
+	seed := wallpaperConf.Seed
 
 	metadata := make(chan []WallpaperMetadata, pages)
 	failures := make(chan error, 0)
-	var seed string
 
 	// Fetch first page of results manually to get a seed
-	url := applyParameters(wallpaperConf, 1, "")
-	resp, err := fetch(url)
+	url := applyParameters(wallpaperConf)
+	pageOne, err := fetchPage(url, 1, &seed)
 	if err != nil {
 		return nil, err
 	}
-	var met []WallpaperMetadata
-	parseJSON(resp, &met, &seed)
-	metadata <- met
+	metadata <- pageOne
 
 	// Fetch rest of pages using previously fetched seed
 	for i := 2; i <= pages; i++ {
 		go func(i int, seed string) {
-			url := applyParameters(wallpaperConf, i, seed)
-			resp, err := fetch(url)
+			resp, err := fetchPage(url, i, &seed)
 			if err != nil {
 				failures <- err
 				return
 			}
 
-			var met []WallpaperMetadata
-			parseJSON(resp, &met, &seed)
-			metadata <- met
+			metadata <- resp
 		}(i, seed)
 	}
 
@@ -85,27 +80,40 @@ func FetchMetadata(wallpaperConf SearchConfig) (*[]WallpaperMetadata, error) {
 	}
 }
 
-func parseJSON(in []byte, out *([]WallpaperMetadata), seed *string) {
-	var results wallhavenResponse
-	json.Unmarshal(in, &results)
-	*seed = results.Meta.Seed
-	*out = append(*out, results.Data...)
-}
-
-func fetch(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+// fetchPage fetches given page of wallpapers and sets the seed to the one returned by server
+func fetchPage(fetchURL url.URL, page int, seed *string) ([]WallpaperMetadata, error) {
+	query, err := url.ParseQuery(fetchURL.RawQuery)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to download metadata: %v", err)
+		return nil, err
+	}
+	query.Set("page", fmt.Sprint(page))
+	query.Set("seed", *seed)
+	fetchURL.RawQuery = query.Encode()
+
+	resp, err := http.Get(fetchURL.String())
+	if err != nil {
+		return nil, err
 	}
 	defer resp.Body.Close()
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
-	return body, nil
+
+	var metadata wallhavenResponse
+	json.Unmarshal(body, &metadata)
+
+	// has no effect when user provided a seed
+	// but if it wasn't provided changes it to the one
+	// returned by server
+	// seed doesn't change for subsequent results
+	seed = &metadata.Meta.Seed
+
+	return metadata.Data, nil
 }
 
-func applyParameters(cfg SearchConfig, pageNumber int, seed string) string {
+func applyParameters(cfg SearchConfig) url.URL {
 	v := url.Values{}
 	v.Set("categories", cfg.Categories)
 	v.Set("purity", cfg.Purity)
@@ -116,12 +124,7 @@ func applyParameters(cfg SearchConfig, pageNumber int, seed string) string {
 	v.Set("resolutions", cfg.Resolutions)
 	v.Set("ratios", cfg.Ratios)
 	v.Set("apikey", cfg.APIKey)
-	v.Set("page", fmt.Sprint(pageNumber))
 	v.Set("q", cfg.Query)
-
-	if seed != "" {
-		v.Set("seed", seed)
-	}
 
 	query := v.Encode()
 
@@ -131,5 +134,5 @@ func applyParameters(cfg SearchConfig, pageNumber int, seed string) string {
 		Path:     "api/v1/search",
 		RawQuery: query,
 	}
-	return url.String()
+	return url
 }
