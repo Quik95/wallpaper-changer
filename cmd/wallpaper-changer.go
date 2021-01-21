@@ -112,7 +112,7 @@ func main() {
 			if err := wp.ValidateArgs(wallpaperConfig); err != nil {
 				return err
 			}
-			metadata, err := wp.FetchMetadata(c)
+			metadata, err := wp.FetchMetadata(wallpaperConfig)
 			if err != nil {
 				return err
 			}

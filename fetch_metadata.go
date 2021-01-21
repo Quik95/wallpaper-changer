@@ -6,8 +6,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-
-	"github.com/urfave/cli/v2"
 )
 
 // SearchConfig describes user defined wallpaper search options
@@ -39,15 +37,15 @@ type wallhavenResponse struct {
 }
 
 // FetchMetadata makes request with passed parameters to wallhaven.cc api and returns response as json
-func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
-	pages := args.Int("pages")
+func FetchMetadata(wallpaperConf SearchConfig) (*[]WallpaperMetadata, error) {
+	pages := wallpaperConf.Pages
 
 	metadata := make(chan []WallpaperMetadata, pages)
 	failures := make(chan error, 0)
 	var seed string
 
 	// Fetch first page of results manually to get a seed
-	url := applyParameters(args, 1, "")
+	url := applyParameters(wallpaperConf, 1, "")
 	resp, err := fetch(url)
 	if err != nil {
 		return nil, err
@@ -59,7 +57,7 @@ func FetchMetadata(args *cli.Context) (*[]WallpaperMetadata, error) {
 	// Fetch rest of pages using previously fetched seed
 	for i := 2; i <= pages; i++ {
 		go func(i int, seed string) {
-			url := applyParameters(args, i, seed)
+			url := applyParameters(wallpaperConf, i, seed)
 			resp, err := fetch(url)
 			if err != nil {
 				failures <- err
@@ -107,19 +105,19 @@ func fetch(url string) ([]byte, error) {
 	return body, nil
 }
 
-func applyParameters(args *cli.Context, pageNumber int, seed string) string {
+func applyParameters(cfg SearchConfig, pageNumber int, seed string) string {
 	v := url.Values{}
-	v.Set("categories", args.String("categories"))
-	v.Set("purity", args.String("purity"))
-	v.Set("sorting", args.String("sorting"))
-	v.Set("order", args.String("order"))
-	v.Set("topRange", args.String("top-range"))
-	v.Set("atleast", args.String("atleast"))
-	v.Set("resolutions", args.String("resolutions"))
-	v.Set("ratios", args.String("ratios"))
-	v.Set("apikey", args.String("api-key"))
+	v.Set("categories", cfg.Categories)
+	v.Set("purity", cfg.Purity)
+	v.Set("sorting", cfg.Sorting)
+	v.Set("order", cfg.Order)
+	v.Set("topRange", cfg.TopRange)
+	v.Set("atleast", cfg.Atleast)
+	v.Set("resolutions", cfg.Resolutions)
+	v.Set("ratios", cfg.Ratios)
+	v.Set("apikey", cfg.APIKey)
 	v.Set("page", fmt.Sprint(pageNumber))
-	v.Set("q", args.String("query"))
+	v.Set("q", cfg.Query)
 
 	if seed != "" {
 		v.Set("seed", seed)
