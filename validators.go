@@ -4,40 +4,38 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-
-	"github.com/urfave/cli/v2"
 )
 
-// ValidateArgs takes cli.Context struct and validates arguments defined by user
-func ValidateArgs(c *cli.Context) error {
-	if err := validateCategory(c.String("categories")); err != nil {
+// ValidateArgs takes SearchConfig struct and validates arguments defined by user
+func ValidateArgs(c SearchConfig) error {
+	if err := validateCategory(c.Categories); err != nil {
 		return err
 	}
-	if err := validateCategory(c.String("purity")); err != nil {
+	if err := validateCategory(c.Purity); err != nil {
 		return err
 	}
-	if err := validateResolution(c.String("resolutions")); err != nil {
+	if err := validateResolution(c.Resolutions); err != nil {
 		return err
 	}
-	if err := validateResolution(c.String("ratios")); err != nil {
+	if err := validateResolution(c.Ratios); err != nil {
 		return err
 	}
-	if err := validateResolution(c.String("atleast")); err != nil {
+	if err := validateResolution(c.Atleast); err != nil {
 		return err
 	}
-	if err := validateSorting(c.String("sorting")); err != nil {
+	if err := validateSorting(c.Sorting); err != nil {
 		return err
 	}
-	if err := validateOrder(c.String("order")); err != nil {
+	if err := validateOrder(c.Order); err != nil {
 		return err
 	}
-	if err := validateTimeRange(c.String("top-range")); err != nil {
+	if err := validateTimeRange(c.TopRange); err != nil {
 		return err
 	}
-	if err := validatePages(c.Int("pages")); err != nil {
+	if err := validatePages(c.Pages); err != nil {
 		return err
 	}
-	if err := validateQuery(c.String("query")); err != nil {
+	if err := validateQuery(c.Query); err != nil {
 		return err
 	}
 
@@ -48,16 +46,16 @@ func ValidateArgs(c *cli.Context) error {
 	return nil
 }
 
-func validatePairedOptions(c *cli.Context) error {
-	purity := c.String("purity")
-	key := c.String("api-key")
+func validatePairedOptions(c SearchConfig) error {
+	purity := c.Purity
+	key := c.APIKey
 
 	if len(purity) == 3 && purity[2] == '1' && len(key) == 0 {
 		return fmt.Errorf("When using purity setting NSFW providing api key is required")
 	}
 
-	sorting := c.String("sorting")
-	topRange := c.String("top-range")
+	sorting := c.Sorting
+	topRange := c.TopRange
 
 	if len(topRange) != 0 && sorting != "toplist" {
 		return fmt.Errorf("When using top-range option sorting must be set to toplist")

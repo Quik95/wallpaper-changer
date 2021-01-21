@@ -10,6 +10,22 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+// SearchConfig describes user defined wallpaper search options
+type SearchConfig struct {
+	Categories  string
+	Purity      string
+	Sorting     string
+	Order       string
+	TopRange    string
+	Atleast     string
+	Resolutions string
+	Ratios      string
+	Pages       int
+	Seed        string
+	Query       string
+	APIKey      string
+}
+
 // WallpaperMetadata represents information needed to download a single wallpaper
 type WallpaperMetadata struct {
 	Path     string

@@ -95,7 +95,21 @@ func main() {
 			},
 		},
 		Action: func(c *cli.Context) error {
-			if err := wp.ValidateArgs(c); err != nil {
+			wallpaperConfig := wp.SearchConfig{
+				Categories:  c.String("categories"),
+				Purity:      c.String("purity"),
+				Order:       c.String("order"),
+				TopRange:    c.String("top-range"),
+				Atleast:     c.String("atleast"),
+				Resolutions: c.String("resolutions"),
+				Ratios:      c.String("ratios"),
+				Pages:       c.Int("pages"),
+				Seed:        c.String("seed"),
+				Query:       c.String("query"),
+				APIKey:      c.String("api-key"),
+			}
+
+			if err := wp.ValidateArgs(wallpaperConfig); err != nil {
 				return err
 			}
 			metadata, err := wp.FetchMetadata(c)
