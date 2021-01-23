@@ -98,6 +98,7 @@ func main() {
 			wallpaperConfig := wp.SearchConfig{
 				Categories:  c.String("categories"),
 				Purity:      c.String("purity"),
+				Sorting:     c.String("sorting"),
 				Order:       c.String("order"),
 				TopRange:    c.String("top-range"),
 				Atleast:     c.String("atleast"),
